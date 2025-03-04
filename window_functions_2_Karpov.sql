@@ -36,6 +36,7 @@ FROM   (SELECT user_id,
 ORDER BY user_id, order_id, time limit 1000
 
 -- ЗАДАЧА 14
+-- подзапрос в LIMIT
 -- Из таблицы courier_actions отберите топ 10% курьеров по количеству доставленных за всё время заказов. Выведите id курьеров, количество доставленных заказов и порядковый номер курьера в соответствии с числом доставленных заказов.
 -- У курьера, доставившего наибольшее число заказов, порядковый номер должен быть равен 1, а у курьера с наименьшим числом заказов — числу, равному десяти процентам от общего количества курьеров в таблице courier_actions.
 -- При расчёте номера последнего курьера округляйте значение до целого числа.
@@ -62,11 +63,9 @@ with t1 as(SELECT DISTINCT courier_id,
            FROM   max(time)
            OVER() - min(time) filter(
            WHERE  action = 'accept_order')
-           OVER(
-           PARTITION BY courier_id)) ::int as days_employed, count(order_id) filter(
-           WHERE  action = 'deliver_order')
-           OVER(
-           PARTITION BY courier_id) as delivered_orders
+           OVER (PARTITION BY courier_id)) ::int as days_employed, 
+           count(order_id) filter(WHERE  action = 'deliver_order')
+           OVER(PARTITION BY courier_id) as delivered_orders
            FROM   courier_actions)
 SELECT courier_id,
        days_employed,
@@ -102,7 +101,7 @@ FROM   (SELECT DISTINCT order_id,
                                        FROM   user_actions
                                        WHERE  action = 'cancel_order')) as t
             LEFT JOIN products using(product_id)) as t2
-ORDER BY ct desc, percentage_of_daily_revenue desc, order_id
+ORDER BY ct desc /*сортировка по дате*/, percentage_of_daily_revenue desc, order_id
 
 -- ЗАДАЧА 17
 -- На основе информации в таблицах orders и products рассчитайте ежедневную выручку сервиса и отразите её в колонке daily_revenue. 
