@@ -214,3 +214,27 @@ FROM   (SELECT order_id,
                                WHERE  action = 'cancel_order')) as t1
 GROUP BY 1, 2
 ORDER BY 1, 2
+
+-- ЗАДАЧА 11
+-- К запросу, полученному на предыдущем шаге, примените оконную функцию и для каждого дня посчитайте долю первых и повторных заказов.
+-- Сохраните структуру полученной ранее таблицы и добавьте только одну новую колонку с посчитанными значениями.
+
+SELECT date,
+       order_type,
+       orders_count,
+       round(orders_count/total_counts, 2) as orders_share
+FROM   (SELECT date,
+               order_type,
+               count (distinct order_id) as orders_count,
+               sum(count (distinct order_id)) OVER(PARTITION BY date) total_counts
+        FROM   (SELECT order_id,
+                       time::date as date,
+                       case when time = min(time) OVER(PARTITION BY user_id
+                                                       ORDER BY time) then 'Первый'
+                            else 'Повторный' end as order_type
+                FROM   user_actions
+                WHERE  order_id not in(SELECT order_id
+                                       FROM   user_actions
+                                       WHERE  action = 'cancel_order')) as t1
+        GROUP BY 1, 2
+        ORDER BY 1, 2)t2
